@@ -15,7 +15,7 @@ fi
 GIT_USER="$(git config user.name)"
 GIT_EMAIL="$(git config user.email)"
 GIT_SHA="$(git rev-parse HEAD)"
-GIT_ORIGIN="$(git config --get remote.origin.url)"
+GIT_ORIGIN="$(git config --get remote.fork.url)"
 
 mkdir dist
 cp README.md action.yml index.js dist
@@ -26,5 +26,5 @@ git add .
 git config --local user.email "$GIT_EMAIL"
 git config --local user.name "$GIT_USER"
 git commit -a -m "$1 $GIT_SHA"
-git remote add origin "$GIT_ORIGIN"
-git push origin +"$1"
+git remote add fork "$GIT_ORIGIN"
+git push fork +"$1"

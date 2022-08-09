@@ -206,6 +206,15 @@ async function pacman(args, opts, cmd) {
   await runMsys([cmd ? cmd : 'pacman', '--noconfirm'].concat(args), opts);
 }
 
+async function updatePacmanConf() {
+  // If an upgrade installed a pacman.conf.pacnew copy it over to the config file
+  await runMsys(['mv', '-f', '/etc/pacman.conf.pacnew', '/etc/pacman.conf'], {ignoreReturnCode: true, silent: true});
+
+  // Reduce time required to install packages by disabling pacman's disk space checking
+  changeGroup('Disable CheckSpace...');
+  await runMsys(['sed', '-i', 's/^CheckSpace/#CheckSpace/g', '/etc/pacman.conf']);
+}
+
 async function run() {
   try {
     const input = parseInput();
@@ -273,14 +282,11 @@ async function run() {
     }
 
     if (input.update) {
-      core.startGroup('Disable CheckSpace...');
-      // Reduce time required to install packages by disabling pacman's disk space checking
-      await runMsys(['sed', '-i', 's/^CheckSpace/#CheckSpace/g', '/etc/pacman.conf']);
+      core.startGroup('Starting MSYS2 Upgrade...');
+      await updatePacmanConf()
       changeGroup('Updating packages...');
       await pacman(['-Syuu', '--overwrite', '*'], {ignoreReturnCode: true});
-      // We have changed /etc/pacman.conf above which means on a pacman upgrade
-      // pacman.conf will be installed as pacman.conf.pacnew
-      await runMsys(['mv', '-f', '/etc/pacman.conf.pacnew', '/etc/pacman.conf'], {ignoreReturnCode: true, silent: true});
+      await updatePacmanConf()
       changeGroup('Killing remaining tasks...');
       await exec.exec('taskkill', ['/F', '/FI', 'MODULES eq msys-2.0.dll']);
       changeGroup('Final system upgrade...');
